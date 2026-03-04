@@ -35,21 +35,21 @@ RUN \
     cpio \
     ca-certificates \
     dropbear-bin \
+    wget \
     xz-utils && \
   rm -rf /var/lib/apt/lists/*
-
-# Set the working directory to /toybox (created as ubuntu:ubuntu)
-WORKDIR /toybox
 
 # Clone toybox sources pinned to 0.8.13
 RUN \
   git clone --branch 0.8.13 --depth 1 https://github.com/landley/toybox.git /toybox && \
-  git clone --branch linux-6.12.y --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git /linux && \
-  git clone --branch DROPBEAR_2025.89 --depth 1 https://github.com/mkj/dropbear.git /dropbear
+  git clone --branch linux-6.12.y --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git /linux
 
 # Copy LiteOS Network configuration
 COPY lite_os.config /toybox/.config
 
-# Copy LiteOS Kernel Network configuration
-COPY lite_os_kernel.config /toybox/lite_os_kernel.config
+# Copy musl libc prebuilt cross-compiler toolchain.
+COPY x86_64-linux-musl-cross /x86_64-linux-musl-cross
+
+# Set /toybox as the working directory
+WORKDIR /toybox
 

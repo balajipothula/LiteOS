@@ -2,13 +2,15 @@
 
 sudo apt --yes install qemu-system-x86 qemu-utils erofs-utils
 
+lz4, lz4hc, lzma, deflate, libdeflate
+
 mkfs.erofs rootfs.erofs fs
 
 mkfs.erofs -zlz4 rootfs.erofs fs
 
 mkfs.erofs -zstd rootfs.erofs fs
 
-mkfs.erofs -zlz4 $HOME/toybox/root/host/rootfs.erofs $HOME/toybox/root/host/fs
+mkfs.erofs lz4 $HOME/LiteOS/rootfs.erofs $HOME/LiteOS/fs
 
 qemu-system-x86_64 \
   -m 256M \
