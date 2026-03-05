@@ -30,3 +30,15 @@ make && \
   NATIVE=1 \
   dropbear
 
+./mkroot/mkroot.sh dropbear overlay OVERLAY=~/blah
+
+# toybox > mkroot > packages > dropbear 7&8 10&11 lines
+
+curl --silent --location --fail --show-error --remote-name https://matt.ucc.asn.au/dropbear/releases/dropbear-2025.89.tar.bz2 && sha1sum dropbear-2025.89.tar.bz2
+65a32c5de0041e65cf9ab6cc894a64e07ed31e47  dropbear-2025.89.tar.bz2
+
+curl --silent --location --fail --show-error --remote-name https://www.zlib.net/fossils/zlib-1.3.2.tar.gz && sha1sum zlib-1.3.2.tar.gz
+0097186c2635358f2239c95d559796238c6640d4  zlib-1.3.2.tar.gz
+
+sudo chown --recursive balaji:balaji $HOME/LiteOS
+
