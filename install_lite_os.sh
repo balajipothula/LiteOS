@@ -2,6 +2,10 @@
 
 set -e
 
+# Install dependencies
+sudo apt --yes update
+sudo apt --yes install dropbear grub-efi-amd64-bin grub2-common
+
 # Target disk
 DISK=/dev/xvdf
 EFI=${DISK}1
@@ -32,8 +36,51 @@ sudo mount "$EFI" /mnt/liteos/boot/efi
 # Copy fs/ contents as writable rootfs
 sudo cp -a "$LITEOS/fs/." /mnt/liteos/
 
+# Fix ownership — cp -a preserves source ownership from build container
+sudo chown -R root:root /mnt/liteos/
+
 # Copy kernel
 sudo cp "$LITEOS/linux-kernel" /mnt/liteos/boot/vmlinuz
+
+# Write clean /init with EC2 networking
+sudo tee /mnt/liteos/init > /dev/null <<'EoI'
+#!/bin/sh
+export HOME=/home PATH=/bin:/sbin
+if ! mountpoint -q dev; then
+  mount -t devtmpfs dev dev
+  [ $$ -eq 1 ] && ! 2>/dev/null <0 && exec 0<>/dev/console 1>&0 2>&1
+  for i in ,fd /0,stdin /1,stdout /2,stderr
+  do ln -sf /proc/self/fd${i/,*/} dev/${i/*,/}; done
+  mkdir -p dev/shm
+  chmod +t /dev/shm
+fi
+mountpoint -q dev/pts || { mkdir -p dev/pts && mount -t devpts dev/pts dev/pts;}
+mountpoint -q proc || mount -t proc proc proc
+mountpoint -q sys || mount -t sysfs sys sys
+echo 0 99999 > /proc/sys/net/ipv4/ping_group_range
+if [ $$ -eq 1 ]; then
+  mountpoint -q mnt || [ -e /dev/?da ] && mount /dev/?da /mnt
+  # Networking
+  ifconfig lo 127.0.0.1
+  ifconfig eth0 up
+  udhcpc -i eth0
+  [ "$(date +%s)" -lt 10000000 ] && sntp -sq time.google.com
+  # Run package scripts (if any)
+  for i in $(ls -1 /etc/rc 2>/dev/null | sort); do . /etc/rc/"$i"; done
+  echo 3 > /proc/sys/kernel/printk
+  [ -z "$HANDOFF" ] && [ -e /mnt/init ] && HANDOFF=/mnt/init
+  [ -z "$HANDOFF" ] && HANDOFF=/bin/sh && echo -e '\e[?7hType exit when done.'
+  setsid -c <>/dev/$(sed '$s@.*[ /]@@' /sys/class/tty/console/active) >&0 2>&1 \
+    $HANDOFF
+  reboot -f &
+  sleep 5
+else # for chroot
+  /bin/sh
+  umount /dev/pts /dev /sys /proc
+fi
+EoI
+sudo chown root:root /mnt/liteos/init
+sudo chmod +x /mnt/liteos/init
 
 # Write grub.cfg to /boot/grub/
 sudo mkdir -p /mnt/liteos/boot/grub
@@ -46,7 +93,7 @@ menuentry "LiteOS" {
     insmod part_gpt
     insmod ext2
     set root=(hd0,gpt2)
-    linux /boot/vmlinuz root=/dev/nvme0n1p2 rootfstype=ext4 rootwait console=ttyS0,115200 HOST=x86_64
+    linux /boot/vmlinuz root=/dev/nvme0n1p2 rootfstype=ext4 rootwait console=ttyS0,115200 HOST=x86_64 init=/init
 }
 EoG
 
@@ -62,13 +109,10 @@ sudo grub-mkstandalone \
 sudo tee /mnt/liteos/etc/fstab > /dev/null <<'EoT'
 /dev/nvme0n1p2  /           ext4    defaults,noatime  0 1
 /dev/nvme0n1p1  /boot/efi   vfat    defaults          0 2
+proc            /proc       proc    defaults          0 0
+sysfs           /sys        sysfs   defaults          0 0
 devpts          /dev/pts    devpts  defaults          0 0
 EoT
-
-# Fix /init networking — replace hardcoded QEMU IPs with DHCP for EC2
-sudo sed -i \
-  's|ifconfig eth0 10.0.2.15.*||;s|route add default gw 10.0.2.2.*||;s|ifconfig eth0 up|ifconfig eth0 up\n  udhcpc -i eth0|' \
-  /mnt/liteos/init
 
 # SSH key for root
 sudo mkdir -p /mnt/liteos/root/.ssh
