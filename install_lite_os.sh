@@ -42,10 +42,29 @@ sudo chown -R root:root /mnt/liteos/
 # Copy kernel
 sudo cp "$LITEOS/linux-kernel" /mnt/liteos/boot/vmlinuz
 
-# Write clean /init with EC2 networking
+# Pre-populate resolv.conf
+echo "nameserver 169.254.169.253" | sudo tee /mnt/liteos/etc/resolv.conf
+
+# Write DHCP event script — called by dhcp with $ip $subnet $router env vars
+sudo mkdir -p /mnt/liteos/etc/rc
+sudo tee /mnt/liteos/etc/rc/ifup > /dev/null <<'EoN'
+#!/bin/sh
+case "$1" in
+  bound|renew)
+    ifconfig eth0 $ip netmask $subnet
+    route add default gw $router
+    ;;
+  deconfig)
+    ifconfig eth0 0.0.0.0
+    ;;
+esac
+EoN
+sudo chmod +x /mnt/liteos/etc/rc/ifup
+
+# Write /init
 sudo tee /mnt/liteos/init > /dev/null <<'EoI'
 #!/bin/sh
-export HOME=/home PATH=/bin:/sbin
+export HOME=/home PATH=/bin:/sbin:/usr/bin:/usr/sbin
 if ! mountpoint -q dev; then
   mount -t devtmpfs dev dev
   [ $$ -eq 1 ] && ! 2>/dev/null <0 && exec 0<>/dev/console 1>&0 2>&1
@@ -57,13 +76,14 @@ fi
 mountpoint -q dev/pts || { mkdir -p dev/pts && mount -t devpts dev/pts dev/pts;}
 mountpoint -q proc || mount -t proc proc proc
 mountpoint -q sys || mount -t sysfs sys sys
+mount -o remount,rw /
 echo 0 99999 > /proc/sys/net/ipv4/ping_group_range
 if [ $$ -eq 1 ]; then
   mountpoint -q mnt || [ -e /dev/?da ] && mount /dev/?da /mnt
-  # Networking
+  # Networking — dhcp calls /etc/rc/ifup with ip/subnet/router env vars
   ifconfig lo 127.0.0.1
   ifconfig eth0 up
-  udhcpc -i eth0
+  dhcp -i eth0 -s /etc/rc/ifup -q &
   [ "$(date +%s)" -lt 10000000 ] && sntp -sq time.google.com
   # Run package scripts (if any)
   for i in $(ls -1 /etc/rc 2>/dev/null | sort); do . /etc/rc/"$i"; done
@@ -82,7 +102,7 @@ EoI
 sudo chown root:root /mnt/liteos/init
 sudo chmod +x /mnt/liteos/init
 
-# Write grub.cfg to /boot/grub/
+# Write grub.cfg
 sudo mkdir -p /mnt/liteos/boot/grub
 sudo tee /mnt/liteos/boot/grub/grub.cfg > /dev/null <<'EoG'
 set default=0
@@ -93,7 +113,7 @@ menuentry "LiteOS" {
     insmod part_gpt
     insmod ext2
     set root=(hd0,gpt2)
-    linux /boot/vmlinuz root=/dev/nvme0n1p2 rootfstype=ext4 rootwait console=ttyS0,115200 HOST=x86_64 init=/init
+    linux /boot/vmlinuz root=/dev/nvme0n1p2 rootfstype=ext4 rootwait rw console=ttyS0,115200 HOST=x86_64 init=/init
 }
 EoG
 

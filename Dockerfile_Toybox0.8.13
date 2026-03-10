@@ -46,8 +46,8 @@ RUN \
   git clone --branch 0.8.13 --depth 1 https://github.com/landley/toybox.git /toybox && \
   git clone --branch linux-6.12.y --depth 1 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git /linux
 
-# Copy LiteOS Network configuration
-COPY lite_os.config /toybox/.config
+# Copy LiteOS Toybox configuration
+COPY lite_os.config /toybox/lite_os.config
 
 # Copy musl-libc prebuilt cross-compiler toolchain.
 COPY x86_64-linux-musl-cross /x86_64-linux-musl-cross

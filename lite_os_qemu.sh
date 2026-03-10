@@ -44,3 +44,20 @@ qemu-system-x86_64 \
   -nic user,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nographic
 
+balaji@pothula:~$ ssh -p 2222 root@127.0.0.1
+The authenticity of host '[127.0.0.1]:2222 ([127.0.0.1]:2222)' can't be established.
+ED25519 key fingerprint is SHA256:9n2O9Gw/yJAxuvxkS508wJRREasF0ghoYpaup1pDuWA.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[127.0.0.1]:2222' (ED25519) to the list of known hosts.
+root@127.0.0.1's password: 
+$ ls
+$ free -h
+		total        used        free      shared     buffers
+Mem:             240M        8.6M        231M           0           0
+-/+ buffers/cache:           8.6M        231M
+Swap:               0           0           0
+$ df -h
+Filesystem      Size Used Avail Use% Mounted on
+dev             119M    0  119M   0% /dev
+
