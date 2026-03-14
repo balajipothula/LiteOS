@@ -2,7 +2,7 @@
 
 # Start a build
 # Build Docker image (Toybox 0.8.13) using specified Dockerfile
-docker image build --tag toybox:0.8.13 --file $HOME/Dockerfile_Toybox0.8.13 .
+docker image build --tag toybox:0.8.13 --file $HOME/Dockerfile_Toybox-0.8.13 .
 
 # Create docker volume mapping directory
 mkdir --parents $HOME/LiteOS
