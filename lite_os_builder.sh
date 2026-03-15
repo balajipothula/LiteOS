@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Download musl-libc prebuilt cross-compiler toolchain
+curl --silent --location --fail --show-error --remote-name https://landley.net/toybox/downloads/binaries/toolchains/latest/x86_64-linux-musl-cross.tar.xz
+
+# Extract musl-libc prebuilt cross-compiler toolchain
+tar --extract --file=$HOME/x86_64-linux-musl-cross.tar.xz --directory $HOME
+
 # Start a build
 # Build Docker image (Toybox 0.8.13) using specified Dockerfile
 docker image build --tag toybox:0.8.13 --file $HOME/Dockerfile_Toybox-0.8.13 .
@@ -42,6 +48,4 @@ make && \
   dropbear
 
 ./mkroot/mkroot.sh dropbear overlay OVERLAY=~/blah
-
-curl --silent --location --fail --show-error --remote-name https://www.zlib.net/fossils/zlib-1.3.2.tar.gz && sha1sum zlib-1.3.2.tar.gz
 
