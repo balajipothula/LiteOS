@@ -22,8 +22,8 @@ LABEL \
 
 # Install required toybox and kernel build dependencies.
 RUN \
-  apt --yes update && \
-  apt --yes install --no-install-recommends \
+  apt-get update >/dev/null && \
+  apt-get install -y --no-install-recommends \
     bc \
     bison \
     build-essential \
@@ -34,7 +34,7 @@ RUN \
     libelf-dev \
     libssl-dev \
     wget \
-    xz-utils && \
+    xz-utils >/dev/null && \
   rm -rf /var/lib/apt/lists/*
 
 # Set /var/tmp/sysroot/dl/ as the working directory.
