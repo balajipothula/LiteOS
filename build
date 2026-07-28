@@ -101,11 +101,11 @@ _lite_os_inn_docker() {
   docker container remove --force lite_os_builder >/dev/null 2>&1 || true
 
   # Create docker volume mapping directory
-  mkdir -p "$DL/lite_os"
+  mkdir -p "$DL/LiteOS"
 
   # Create and run a new container from an image
   # Create and run Toybox build container with output bind mount
-  docker container run --name lite_os_builder --hostname lite-os-builder --interactive --tty --detach --mount "type=bind,source=$DL/lite_os,target=$DL/lite_os" toybox:0.8.13
+  docker container run --name lite_os_builder --hostname lite-os-builder --interactive --tty --detach --mount "type=bind,source=$DL/LiteOS,target=$DL/LiteOS" toybox:0.8.13
 
   # Execute a command in a running container.
   # Open interactive bash shell inside lite_os_builder container.
