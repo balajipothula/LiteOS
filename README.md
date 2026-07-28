@@ -43,6 +43,6 @@ cd /var/tmp/sysroot/dl
 ## Boot
 
 ``` bash
-cd /var/tmp/sysroot/dl/lite_os
+cd /var/tmp/sysroot/dl/LiteOS
 ./run-qemu.sh
 ```
