@@ -44,7 +44,9 @@ WORKDIR ${DL}/
 COPY \
   toybox-0.8.13.tar.gz \
   linux-6.12.79.tar.xz \
-  build_lite_os.sh \ 
+  zlib-1.3.1.tar.gz \
+  dropbear-2024.86.tar.bz2 \
+  build_lite_os.sh \
   ${DL}/
 
 # Make the 'LiteOS' build script executable.
