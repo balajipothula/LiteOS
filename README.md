@@ -30,7 +30,7 @@ networking, SSH, and standard Linux utilities.
 
 ## Build
 #### Note: '/var/tmp/' is available on most Linux distributions.
-#### Create the `/var/tmp/sysroot/dl` directory structure and download the LiteOS repository files there.
+#### Create the /var/tmp/sysroot/dl directory structure and download shell files build, build_lite_os.sh and Dockerfile from LiteOS repository and keep files in /var/tmp/sysroot/dl
 ##### My Build Environment — Ubuntu Server 24.04 LTS (HVM), SSD Volume Type, Architecture: x86_64, Amazon Machine Image ID: ami-02b8269d5e85954ef
 ``` bash
 mkdir -p /var/tmp/sysroot/dl
