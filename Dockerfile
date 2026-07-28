@@ -40,12 +40,12 @@ RUN \
 # Set /var/tmp/sysroot/dl/ as the working directory.
 WORKDIR ${DL}/
 
-# Copy essential source tarballs into /var/tmp/sysroot/dl
+# Copy essential source tarballs into /var/tmp/sysroot/dl/
 COPY \
   toybox-0.8.13.tar.gz \
   linux-6.12.79.tar.xz \
   build_lite_os.sh \ 
   ${DL}/
 
-# Make GNU (GNU's Not Unix) BASH (Bourne Again SHell) installation script executable.
+# Make the 'LiteOS' build script executable.
 RUN chmod +x ${DL}/build_lite_os.sh
