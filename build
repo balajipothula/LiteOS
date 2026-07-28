@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# Toybox: all-in-one Linux command line.
+# LiteOS: Minimal Linux-based Operating System.
+# liteos:`toybox` + `dropbear` with `zlib` + `kernel`
+
+START=$(date +%s)
+
+# Define the build workspace ─ 'path' is critical for the build process.
+# Note: '/var/tmp/' is available on most Linux distributions.
+SYSROOT="/var/tmp/sysroot"
+BIN="$SYSROOT/bin"
+DL="$SYSROOT/dl"
+
+for dir in "$BIN" "$DL"; do [ -d "$dir" ] || mkdir -p "$dir" || exit 1; done
+
+[[ ":$PATH:" == *":$BIN:"* ]] || export PATH="$BIN:$PATH"
+
+# Install Docker Engine from static binaries
+# curl -skLSJO https://download.docker.com/linux/static/stable/x86_64/docker-29.6.2.tgz
+_setup_docker() {
+  [ -f "$BIN/containerd" ] && [ -f "$BIN/containerd-shim-runc-v2" ] && [ -f "$BIN/docker" ] && [ -f "$BIN/docker-proxy" ] && [ -f "$BIN/dockerd" ] && [ -f "$BIN/runc" ] && return
+  app="docker"
+  ver="29.6.2"
+  pkg="${app}-${ver}"
+  ext="tgz"
+  arc="x86_64"
+  url="https://download.docker.com/linux/static/stable/${arc}/${pkg}.${ext}"
+  des="Docker Engine static binaries"
+  [ -f "$DL/$pkg.$ext" ] || curl -skLSJ "$url" -o "$DL/$pkg.$ext" || exit 1
+  tar -xf "$DL/$pkg.$ext" -C "$DL" || exit 1
+  for tool in containerd containerd-shim-runc-v2 docker docker-proxy dockerd runc; do mv "$DL/$app/$tool" "$BIN"; done
+  rm -rf "$DL/$app"
+}
+
+# Docker Engine rootless extras — support for unprivileged mode
+# curl -skLSJO https://download.docker.com/linux/static/stable/x86_64/docker-rootless-extras-29.6.2.tgz
+_setup_docker_rootless() {
+  systemctl --quiet --user is-active docker && return
+  app="docker-rootless-extras"
+  ver="29.6.2"
+  pkg="${app}-${ver}"
+  ext="tgz"
+  arc="x86_64"
+  url="https://download.docker.com/linux/static/stable/${arc}/${pkg}.${ext}"
+  des="Docker Engine rootless extras to support unprivileged mode"
+  [ -f "$DL/$pkg.$ext" ] || curl -skLSJ "$url" -o "$DL/$pkg.$ext" || exit 1
+  rm -rf "$DL/$app"
+  tar -xf "$DL/$pkg.$ext" -C "$DL" || exit 1
+  for tool in dockerd-rootless-setuptool.sh dockerd-rootless.sh rootlesskit; do mv "$DL/$app/$tool" "$BIN"; done
+
+  sudo apt --yes update || exit 1
+  sudo apt --yes install uidmap dbus-user-session slirp4netns qemu-system-x86 || exit 1
+  sudo modprobe nf_tables || exit 1
+
+  # Grant rootlesskit permission to create user namespaces under AppArmor's
+  # restricted-unprivileged-userns policy (Ubuntu 23.10+); required for rootless Docker to start.
+  cat <<'EoDRK' | sudo tee "/etc/apparmor.d/docker.rootlesskit" >/dev/null
+abi <abi/4.0>,
+include <tunables/global>
+/var/tmp/sysroot/bin/rootlesskit flags=(unconfined) {
+  userns,
+  include if exists <local/docker.rootlesskit>
+}
+EoDRK
+
+  sudo systemctl restart apparmor.service || exit 1
+
+  "$BIN/dockerd-rootless-setuptool.sh" install || exit 1
+  systemctl --user enable docker || exit 1
+  systemctl --user start docker || exit 1
+  export DOCKER_HOST="unix:///run/user/$(id -u)/docker.sock"
+  rm -rf "$DL/$app"
+}
+
+_lite_os_inn_docker() {
+  # Toybox and Linux Kernel package details.
+  toybox_tar="toybox-0.8.13.tar.gz"
+  linux_tar="linux-6.12.79.tar.xz"
+  [ -f "$DL/$toybox_tar" ] || curl -skLSJ "https://landley.net/toybox/downloads/$toybox_tar" -o "$DL/$toybox_tar"       || exit 1
+  [ -f "$DL/$linux_tar" ]  || curl -skLSJ "https://cdn.kernel.org/pub/linux/kernel/v6.x/$linux_tar" -o "$DL/$linux_tar" || exit 1
+
+  # Start a build
+  # Build Docker image (Toybox 0.8.13) using specified Dockerfile
+  docker image build --tag toybox:0.8.13 --file "$DL/Dockerfile" .
+
+  # Remove one or more containers
+  # Remove the existing build container to start a fresh build
+  docker container remove --force lite_os_builder >/dev/null 2>&1 || true
+
+  # Create docker volume mapping directory
+  mkdir -p "$DL/lite_os"
+
+  # Create and run a new container from an image
+  # Create and run Toybox build container with output bind mount
+  docker container run --name lite_os_builder --hostname lite-os-builder --interactive --tty --detach --mount "type=bind,source=$DL/lite_os,target=$DL/lite_os" toybox:0.8.13
+
+  # Execute a command in a running container.
+  # Open interactive bash shell inside lite_os_builder container.
+  docker container exec --interactive --tty lite_os_builder bash "$DL/build_lite_os.sh"
+
+  # Remove one or more containers
+  # Remove the existing build container to start a fresh build
+  docker container remove --force lite_os_builder >/dev/null 2>&1 || true
+}
+
+case "${1}" in
+  setup_docker)          _setup_docker          ;;
+  setup_docker_rootless) _setup_docker_rootless ;;
+  lite_os_inn_docker)    _lite_os_inn_docker    ;;
+  *)
+    echo "Usage: $0 setup_docker|setup_docker_rootless|lite_os_inn_docker"
+    exit 1
+    ;;
+esac
+
+echo "Build time: $(date -d@$(($(date +%s)-START)) -u +%H:%M:%S)"
