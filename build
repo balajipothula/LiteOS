@@ -73,12 +73,24 @@ EoDRK
   rm -rf "$DL/$app"
 }
 
+# Build LiteOS in a Docker container.
+# Note: Download the required packages manually to avoid failures in the build script.
+# curl -skLSJO https://landley.net/toybox/downloads/toybox-0.8.13.tar.gz
+# curl -skLSJO https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.79.tar.xz
+# curl -skLSJO https://www.zlib.net/fossils/zlib-1.3.1.tar.gz
+# curl -skLSJO https://matt.ucc.asn.au/dropbear/releases/dropbear-2024.86.tar.bz2
+# curl -skLSJO https://mirror.dropbear.nl/mirror/releases/dropbear-2024.86.tar.bz2
 _lite_os_inn_docker() {
   # Toybox and Linux Kernel package details.
   toybox_tar="toybox-0.8.13.tar.gz"
   linux_tar="linux-6.12.79.tar.xz"
-  [ -f "$DL/$toybox_tar" ] || curl -skLSJ "https://landley.net/toybox/downloads/$toybox_tar" -o "$DL/$toybox_tar"       || exit 1
-  [ -f "$DL/$linux_tar" ]  || curl -skLSJ "https://cdn.kernel.org/pub/linux/kernel/v6.x/$linux_tar" -o "$DL/$linux_tar" || exit 1
+  zlib_tar="zlib-1.3.1.tar.gz"
+  dropbear_tar="dropbear-2024.86.tar.bz2"
+
+  [ -f "$DL/$toybox_tar" ] || curl -skLSJ "https://landley.net/toybox/downloads/$toybox_tar" -o "$DL/$toybox_tar"           || exit 1
+  [ -f "$DL/$linux_tar" ]  || curl -skLSJ "https://cdn.kernel.org/pub/linux/kernel/v6.x/$linux_tar" -o "$DL/$linux_tar"     || exit 1
+  [ -f "$DL/$linux_tar" ]  || curl -skLSJ "https://www.zlib.net/fossils/$zlib_tar" -o "$DL/$zlib_tar"                       || exit 1
+  [ -f "$DL/$linux_tar" ]  || curl -skLSJ "https://mirror.dropbear.nl/mirror/releases/$dropbear_tar" -o "$DL/$dropbear_tar" || exit 1
 
   # Start a build
   # Build Docker image (Toybox 0.8.13) using specified Dockerfile
