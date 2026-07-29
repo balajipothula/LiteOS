@@ -29,10 +29,10 @@ Despite using only about **10 MB RAM**, LiteOS provides a shell,
 networking, SSH, and standard Linux utilities.
 
 ## Build
-#### Note: '/var/tmp/' is available on most Linux distributions.
-#### Create the /var/tmp/sysroot/dl directory structure and download shell files build, build_lite_os.sh and Dockerfile from LiteOS repository and keep files in /var/tmp/sysroot/dl
-##### My Build Environment — Ubuntu Server 24.04 LTS (HVM), SSD Volume Type, Architecture: x86_64, Amazon Machine Image ID: ami-02b8269d5e85954ef
-##### Please wait while the build is running. Build duration depends on your system configuration.
+#### Note: `/var/tmp/` typically has `drwxrwxrwt` permissions on most Linux distributions.
+##### Place `build`, `build_lite_os.sh`, and `Dockerfile` from the LiteOS repository in `/var/tmp/sysroot/dl/`.
+###### Tested on: AWS EC2 Ubuntu Server 24.04 LTS (x86_64, AMI: `ami-02b8269d5e85954ef`)
+###### Please wait while the build is running. Build time varies by system configuration.
 ``` bash
 mkdir -p /var/tmp/sysroot/dl
 cd /var/tmp/sysroot/dl/
